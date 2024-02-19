@@ -42,16 +42,6 @@ extern "C" {
  */
 #define QUEUE_READ_LOCK                    1
 /**
- * @brief if your platform support 64bit variables and you need it
- * you can enable this option
- */
-#define QUEUE_UINT64                       1
-/**
- * @brief if you need r/w double variables and your platform support
- * you can enable this option
- */
-#define QUEUE_DOUBLE                       1
-/**
  * @brief enable get functions
  */
 #define QUEUE_GET_FUNCTIONS                1
@@ -59,14 +49,6 @@ extern "C" {
  * @brief enable getAt functions
  */
 #define QUEUE_GET_AT_FUNCTIONS             1
-/**
- * @brief enable find functions
- */
-#define QUEUE_FIND_FUNCTIONS               1
-/**
- * @brief enable findAt functions
- */
-#define QUEUE_FIND_AT_FUNCTIONS            1
 /**
  * @brief check len parameter in read/write functions
  */
