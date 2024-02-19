@@ -8,13 +8,13 @@
  * @param buffer address of byte buffer
  * @param size size of buffer
  */
-void Queue_init(Queue* queue, uint8_t* buffer, Queue_LenType size, Queue_LenType itemLength) {
-    queue->Buf = buffer;
+void Queue_init(Queue* queue, void* buffer, Queue_LenType size, Queue_LenType itemSize) {
+    queue->Buf = (uint8_t*) buffer;
     queue->Size = size;
     queue->Overflow = 0;
     queue->RPos = 0;
     queue->WPos = 0;
-    queue->ItemSize = itemLength;
+    queue->ItemSize = itemSize;
 #if QUEUE_WRITE_LIMIT
     queue->WriteLimit = QUEUE_NO_LIMIT;
 #endif // QUEUE_WRITE_LIMIT
@@ -35,8 +35,8 @@ void Queue_init(Queue* queue, uint8_t* buffer, Queue_LenType size, Queue_LenType
  * @param buffer 
  * @param size 
  */
-void Queue_fromBuff(Queue* queue, uint8_t* buffer, Queue_LenType size, Queue_LenType itemLength) {
-    Queue_init(queue, buffer, size, itemLength);
+void Queue_fromBuff(Queue* queue, void* buffer, Queue_LenType size, Queue_LenType itemSize) {
+    Queue_init(queue, buffer, size, itemSize);
     queue->WPos = size;
 }
 /**
@@ -251,8 +251,8 @@ uint8_t* Queue_getReadPtrAt(Queue* queue, Queue_LenType index) {
  *
  * @param queue
  */
-void Queue_setBuffer(Queue* queue, uint8_t* data, Queue_LenType size) {
-    Queue_init(queue, data, size);
+void Queue_setBuffer(Queue* queue, void* data, Queue_LenType size, Queue_LenType itemSize) {
+    Queue_init(queue, data, size, itemSize);
 }
 /**
  * @brief return byte buffer
@@ -279,7 +279,7 @@ Queue_LenType Queue_getBufferSize(Queue* queue) {
  * @param steps
  * @return Queue_Result
  */
-Queue_Result Queue_moveWritePos(Queue* queue, Queue_LenType steps) {
+Queue_Result Queue_moveWritePosRaw(Queue* queue, Queue_LenType steps) {
     if (Queue_spaceRaw(queue) < steps) {
         return Queue_NoSpace;
     }
@@ -299,7 +299,7 @@ Queue_Result Queue_moveWritePos(Queue* queue, Queue_LenType steps) {
  * @param steps
  * @return Queue_Result
  */
-Queue_Result Queue_moveReadPos(Queue* queue, Queue_LenType steps) {
+Queue_Result Queue_moveReadPosRaw(Queue* queue, Queue_LenType steps) {
     if (Queue_availableRaw(queue) < steps) {
         return Queue_NoAvailable;
     }
@@ -663,7 +663,7 @@ Queue_Result Queue_readQueue(Queue* in, Queue* out, Queue_LenType len) {
 #if QUEUE_GET_AT_FUNCTIONS && QUEUE_GET_FUNCTIONS
 
 Queue_Result Queue_get(Queue* queue, void* val) {
-    return Queue_getAt(queue, 0, val, len);
+    return Queue_getAt(queue, 0, val);
 }
 Queue_Result Queue_getArray(Queue* queue, void* val, Queue_LenType len) {
     return Queue_getArrayAt(queue, 0, val, len);
@@ -723,7 +723,7 @@ Queue_Result Queue_lockWrite(Queue* queue, Queue* lock, Queue_LenType len) {
  */
 void Queue_unlockWrite(Queue* queue, Queue* lock) {
     if (queue->WriteLocked) {
-        Queue_moveWritePos(queue, Queue_lockWriteLenRaw(queue, lock));
+        Queue_moveWritePosRaw(queue, Queue_lockWriteLenRaw(queue, lock));
         queue->WriteLocked = 0;
     }
 }
@@ -796,7 +796,7 @@ Queue_Result Queue_lockRead(Queue* queue, Queue* lock, Queue_LenType len) {
  */
 void Queue_unlockRead(Queue* queue, Queue* lock) {
     if (queue->ReadLocked) {
-        Queue_moveReadPos(queue, Queue_lockReadLenRaw(queue, lock));
+        Queue_moveReadPosRaw(queue, Queue_lockReadLenRaw(queue, lock));
         queue->ReadLocked = 0;
     }
 }

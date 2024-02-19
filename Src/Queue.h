@@ -28,19 +28,19 @@ extern "C" {
 /**
  * @brief enable set limit for write functions
  */
-#define QUEUE_WRITE_LIMIT                  1
+#define QUEUE_WRITE_LIMIT                  0
 /**
  * @brief enable set limit for read operations
  */
-#define QUEUE_READ_LIMIT                   1
+#define QUEUE_READ_LIMIT                   0
 /**
  * @brief enable write lock feature
  */
-#define QUEUE_WRITE_LOCK                   1
+#define QUEUE_WRITE_LOCK                   0
 /**
  * @brief enable read lock feature
  */
-#define QUEUE_READ_LOCK                    1
+#define QUEUE_READ_LOCK                    0
 /**
  * @brief enable get functions
  */
@@ -98,6 +98,12 @@ typedef struct {
     Queue_LenType           WPos;                   /**< write position */
     Queue_LenType           RPos;                   /**< read position */
     Queue_LenType           ItemSize;               /**< length of each item */
+#if QUEUE_WRITE_LIMIT
+    Queue_LenType           WriteLimit;             /**< limit for write operation */
+#endif 
+#if QUEUE_READ_LIMIT
+    Queue_LenType           ReadLimit;              /**< limit for read operation */
+#endif
     uint8_t                 Overflow    : 1;        /**< overflow flag */
     uint8_t                 Order       : 1;        /**< byte order */
     uint8_t                 OrderFn     : 1;        /**< byte order function */
@@ -106,22 +112,22 @@ typedef struct {
     uint8_t                 Reserved    : 3;        /**< reserved */
 } Queue;
 
-void Queue_init(Queue* queue, uint8_t* buffer, Queue_LenType size, Queue_LenType itemLength);
-void Queue_fromBuff(Queue* queue, uint8_t* buffer, Queue_LenType size, Queue_LenType itemLength);
+void Queue_init(Queue* queue, void* buffer, Queue_LenType size, Queue_LenType itemLength);
+void Queue_fromBuff(Queue* queue, void* buffer, Queue_LenType size, Queue_LenType itemLength);
 void Queue_deinit(Queue* queue);
 
 /*************** General APIs *************/
 
 #if QUEUE_WRITE_LIMIT
-    #define Queue_spaceRaw(QUEUE)                Queue_spaceLimit((QUEUE))
+    #define Queue_spaceRaw(QUEUE)                Queue_spaceLimitRaw((QUEUE))
 #else
-    #define Queue_spaceRaw(QUEUE)                Queue_spaceReal((QUEUE))
+    #define Queue_spaceRaw(QUEUE)                Queue_spaceRealRaw((QUEUE))
 #endif // QUEUE_WRITE_LIMIT
 
 #if QUEUE_READ_LIMIT
-    #define Queue_availableRaw(QUEUE)            Queue_availableLimit((QUEUE))
+    #define Queue_availableRaw(QUEUE)            Queue_availableLimitRaw((QUEUE))
 #else
-    #define Queue_availableRaw(QUEUE)            Queue_availableReal((QUEUE))
+    #define Queue_availableRaw(QUEUE)            Queue_availableRealRaw((QUEUE))
 #endif // QUEUE_READ_LIMIT
 
 Queue_LenType Queue_availableRealRaw(Queue* queue);
@@ -147,14 +153,14 @@ void Queue_clear(Queue* queue);
 
 uint8_t* Queue_getBuffer(Queue* queue);
 
-void Queue_setBuffer(Queue* queue, uint8_t* data, Queue_LenType size);
+void Queue_setBuffer(Queue* queue, void* data, Queue_LenType size, Queue_LenType itemSize);
 Queue_LenType Queue_getBufferSize(Queue* queue);
 
 Queue_LenType Queue_getWritePos(Queue* queue);
 Queue_LenType Queue_getReadPos(Queue* queue);
 
-Queue_Result Queue_moveWritePos(Queue* queue, Queue_LenType steps);
-Queue_Result Queue_moveReadPos(Queue* queue, Queue_LenType steps);
+Queue_Result Queue_moveWritePosRaw(Queue* queue, Queue_LenType steps);
+Queue_Result Queue_moveReadPosRaw(Queue* queue, Queue_LenType steps);
 
 void Queue_flipWrite(Queue* queue, Queue_LenType len);
 void Queue_flipRead(Queue* queue, Queue_LenType len);
