@@ -113,7 +113,7 @@ typedef struct {
 } Queue;
 
 void Queue_init(Queue* queue, void* buffer, Queue_LenType size, Queue_LenType itemLength);
-void Queue_fromBuff(Queue* queue, void* buffer, Queue_LenType size, Queue_LenType itemLength);
+void Queue_fromBuff(Queue* queue, void* buffer, Queue_LenType size, Queue_LenType itemLength, Queue_LenType len);
 void Queue_deinit(Queue* queue);
 
 /*************** General APIs *************/

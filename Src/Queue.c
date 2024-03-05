@@ -35,9 +35,9 @@ void Queue_init(Queue* queue, void* buffer, Queue_LenType size, Queue_LenType it
  * @param buffer 
  * @param size 
  */
-void Queue_fromBuff(Queue* queue, void* buffer, Queue_LenType size, Queue_LenType itemSize) {
+void Queue_fromBuff(Queue* queue, void* buffer, Queue_LenType size, Queue_LenType itemSize, Queue_LenType len) {
     Queue_init(queue, buffer, size, itemSize);
-    queue->WPos = size;
+    queue->WPos = len * itemSize;
 }
 /**
  * @brief reset queue struct into default values
@@ -513,12 +513,18 @@ Queue_Result Queue_writeArray(Queue* queue, void* val, Queue_LenType len) {
     }
 #endif
 
-    memcpy(&queue->Buf[queue->WPos], val, len);
-    // move WPos
-    queue->WPos += len;
-    if (queue->WPos >= queue->Size) {
+    // Write first part
+    if (queue->WPos + len >= queue->Size) {
+        Queue_LenType tmpLen = queue->Size - queue->WPos;
+        memcpy(&queue->Buf[queue->WPos], val, tmpLen);
+        len -= tmpLen;
         queue->WPos = 0;
         queue->Overflow = 1;
+    }
+    // Write the rest
+    if (len > 0) {
+        memcpy(&queue->Buf[queue->WPos], val, len);
+        queue->WPos += len;
     }
 
     return Queue_Ok;
@@ -613,12 +619,18 @@ Queue_Result Queue_readArray(Queue* queue, void* val, Queue_LenType len) {
     }
 #endif
 
-    memcpy(val, &queue->Buf[queue->RPos], len);
-    // move RPos
-    queue->RPos += len;
-    if (queue->RPos >= queue->Size) {
+    // Read first part
+    if (queue->RPos + len >= queue->Size) {
+        Queue_LenType tmpLen = queue->Size - queue->RPos;
+        memcpy(val, &queue->Buf[queue->RPos], tmpLen);
+        len -= tmpLen;
         queue->RPos = 0;
         queue->Overflow = 0;
+    }
+    // Read the rest
+    if (len > 0) {
+        memcpy(val, &queue->Buf[queue->RPos], len);
+        queue->RPos += len;
     }
     
     return Queue_Ok;
