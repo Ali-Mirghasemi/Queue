@@ -111,6 +111,15 @@ typedef struct {
     uint8_t                 ReadLocked  : 1;        /**< queue write locked */
     uint8_t                 Reserved    : 3;        /**< reserved */
 } Queue;
+/**
+ * @brief Write or Read queue with custom functions as query
+ * @param queue pointer to queue
+ * @param val pointer to data
+ * @param index index of data
+ * @param len length of data
+ * @return Queue_Result
+ */
+typedef Queue_Result (*Queue_QueryFn)(Queue* queue, void* val, Queue_LenType index, Queue_LenType len);
 
 void Queue_init(Queue* queue, void* buffer, Queue_LenType size, Queue_LenType itemLength);
 void Queue_fromBuff(Queue* queue, void* buffer, Queue_LenType size, Queue_LenType itemLength, Queue_LenType len);
@@ -143,10 +152,10 @@ Queue_LenType Queue_directSpaceRaw(Queue* queue);
 Queue_LenType Queue_directAvailableAtRaw(Queue* queue, Queue_LenType index);
 Queue_LenType Queue_directSpaceAtRaw(Queue* queue, Queue_LenType index);
 
-uint8_t* Queue_getWritePtr(Queue* queue);
-uint8_t* Queue_getReadPtr(Queue* queue);
-uint8_t* Queue_getWritePtrAt(Queue* queue, Queue_LenType index);
-uint8_t* Queue_getReadPtrAt(Queue* queue, Queue_LenType index);
+void* Queue_getWritePtr(Queue* queue);
+void* Queue_getReadPtr(Queue* queue);
+void* Queue_getWritePtrAt(Queue* queue, Queue_LenType index);
+void* Queue_getReadPtrAt(Queue* queue, Queue_LenType index);
 
 void Queue_reset(Queue* queue);
 void Queue_clear(Queue* queue);
@@ -203,11 +212,15 @@ void Queue_flipRead(Queue* queue, Queue_LenType len);
 Queue_Result Queue_write(Queue* queue, void* val);
 Queue_Result Queue_writeArray(Queue* queue, void* val, Queue_LenType len);
 Queue_Result Queue_writeQueue(Queue* out, Queue* in, Queue_LenType len);
+Queue_Result Queue_writeQuery(Queue* queue, Queue_QueryFn query);
+Queue_Result Queue_writeQueryArray(Queue* queue, Queue_LenType len, Queue_QueryFn query);
 
 /**************** Read APIs **************/
 Queue_Result Queue_read(Queue* queue, void* val);
 Queue_Result Queue_readArray(Queue* queue, void* val, Queue_LenType len);
 Queue_Result Queue_readQueue(Queue* in, Queue* out, Queue_LenType len);
+Queue_Result Queue_readQuery(Queue* queue, Queue_QueryFn query);
+Queue_Result Queue_readQueryArray(Queue* queue, Queue_LenType len, Queue_QueryFn query);
 
 #if QUEUE_GET_AT_FUNCTIONS && QUEUE_GET_FUNCTIONS
     Queue_Result Queue_get(Queue* queue, void* val);

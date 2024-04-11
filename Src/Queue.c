@@ -216,19 +216,26 @@ Queue_LenType Queue_directSpaceAtRaw(Queue* queue, Queue_LenType index) {
  * @param queue
  * @return uint8_t*
  */
-uint8_t* Queue_getWritePtr(Queue* queue) {
+void* Queue_getWritePtr(Queue* queue) {
     return &queue->Buf[queue->WPos];
 }
 /**
  * @brief get ptr to start of RPos in ram
  *
  * @param queue
- * @return uint8_t*
+ * @return void*
  */
-uint8_t* Queue_getReadPtr(Queue* queue) {
+void* Queue_getReadPtr(Queue* queue) {
     return &queue->Buf[queue->RPos];
 }
-uint8_t* Queue_getWritePtrAt(Queue* queue, Queue_LenType index) {
+/**
+ * @brief get ptr to start of WPos in ram
+ * 
+ * @param queue 
+ * @param index 
+ * @return void* 
+ */
+void* Queue_getWritePtrAt(Queue* queue, Queue_LenType index) {
     index += queue->WPos;
 
     if (index >= queue->Size) {
@@ -237,7 +244,14 @@ uint8_t* Queue_getWritePtrAt(Queue* queue, Queue_LenType index) {
 
     return &queue->Buf[index];
 }
-uint8_t* Queue_getReadPtrAt(Queue* queue, Queue_LenType index) {
+/**
+ * @brief get ptr to start of RPos in ram
+ * 
+ * @param queue 
+ * @param index 
+ * @return void* 
+ */
+void* Queue_getReadPtrAt(Queue* queue, Queue_LenType index) {
     index += queue->RPos;
 
     if (index >= queue->Size) {
@@ -576,6 +590,71 @@ Queue_Result Queue_writeQueue(Queue* out, Queue* in, Queue_LenType len) {
     return Queue_Ok;
 }
 /**
+ * @brief write item into queue with custom query function
+ * 
+ * @param queue 
+ * @param len 
+ * @param query 
+ * @return Queue_Result 
+ */
+Queue_Result Queue_writeQuery(Queue* queue, Queue_QueryFn query) {
+    // check available space for write
+    if (Queue_spaceRaw(queue) < queue->ItemSize) {
+        return Queue_NoSpace;
+    }
+#if QUEUE_WRITE_LIMIT
+    if (Queue_isWriteLimited(queue)) {
+        queue->WriteLimit -= len;
+    }
+#endif
+
+    Queue_Result res;
+    
+    // Call query function
+    if ((res = query(queue, Queue_getWritePtr(queue), 0, 1)) == Queue_Ok) {
+        // Move WPos
+        Queue_moveWritePosRaw(queue, queue->ItemSize);
+    }
+
+    return res;
+}
+/**
+ * @brief write item into queue with custom query function
+ * 
+ * @param queue 
+ * @param len 
+ * @param query 
+ * @return Queue_Result 
+ */
+Queue_Result Queue_writeQueryArray(Queue* queue, Queue_LenType len, Queue_QueryFn query) {
+    // check available space for write
+#if QUEUE_CHECK_ZERO_LEN
+    if (len == 0) {
+      return Queue_ZeroLen;
+    }
+#endif
+    if (Queue_spaceRaw(queue) < len * queue->ItemSize) {
+        return Queue_NoSpace;
+    }
+#if QUEUE_WRITE_LIMIT
+    if (Queue_isWriteLimited(queue)) {
+        queue->WriteLimit -= len;
+    }
+#endif
+
+    Queue_Result res = Queue_Ok;
+    Queue_LenType i = 0;
+
+    while ((res = query(queue, Queue_getWritePtr(queue), i, len)) == Queue_Ok &&
+            ++i < len
+    ) {
+        // Move WPos
+        Queue_moveWritePosRaw(queue, queue->ItemSize);
+    }
+
+    return res;
+}
+/**
  * @brief read bytes form queue, if possible
  *
  * @param queue
@@ -635,6 +714,14 @@ Queue_Result Queue_readArray(Queue* queue, void* val, Queue_LenType len) {
     
     return Queue_Ok;
 }
+/**
+ * @brief read bytes from queue and write to another
+ *
+ * @param in
+ * @param out
+ * @param len
+ * @return Queue_Result
+ */
 Queue_Result Queue_readQueue(Queue* in, Queue* out, Queue_LenType len) {
 #if QUEUE_CHECK_ZERO_LEN
     if (len == 0) {
@@ -672,11 +759,92 @@ Queue_Result Queue_readQueue(Queue* in, Queue* out, Queue_LenType len) {
 
     return Queue_Ok;
 }
-#if QUEUE_GET_AT_FUNCTIONS && QUEUE_GET_FUNCTIONS
+/**
+ * @brief read bytes from queue with custom query function
+ * 
+ * @param queue 
+ * @param len 
+ * @param query 
+ * @return Queue_Result 
+ */
+Queue_Result Queue_readQuery(Queue* queue, Queue_QueryFn query) {
+    // check available bytes for read
+    if (Queue_availableRaw(queue) < queue->ItemSize) {
+        return Queue_NoAvailable;
+    }
+#if QUEUE_READ_LIMIT
+    if (Queue_isReadLimited(queue)) {
+        queue->ReadLimit -= len;
+    }
+#endif
 
+    Queue_Result res;
+    
+    // Call query function
+    if ((res = query(queue, Queue_getReadPtr(queue), 0, 1)) == Queue_Ok) {
+        // Move RPos
+        Queue_moveReadPosRaw(queue, queue->ItemSize);
+    }
+
+    return res;
+}
+
+/**
+ * @brief read bytes from queue with custom query function
+ * 
+ * @param queue 
+ * @param len 
+ * @param query 
+ * @return Queue_Result 
+ */
+Queue_Result Queue_readQueryArray(Queue* queue, Queue_LenType len, Queue_QueryFn query) {
+    // check available bytes for read
+#if QUEUE_CHECK_ZERO_LEN
+    if (len == 0) {
+        return Queue_ZeroLen;
+    }
+#endif
+    if (Queue_availableRaw(queue) < len * queue->ItemSize) {
+        return Queue_NoAvailable;
+    }
+#if QUEUE_READ_LIMIT
+    if (Queue_isReadLimited(queue)) {
+        queue->ReadLimit -= len;
+    }
+#endif
+
+    Queue_Result res = Queue_Ok;
+    Queue_LenType i = 0;
+
+    while ((res = query(queue, Queue_getReadPtr(queue), i, len)) == Queue_Ok &&
+            ++i < len
+    ) {
+        // Move RPos
+        Queue_moveReadPosRaw(queue, queue->ItemSize);
+    }
+
+    return res;
+}
+
+#if QUEUE_GET_AT_FUNCTIONS && QUEUE_GET_FUNCTIONS
+/**
+ * @brief get first item from queue without removing
+ * 
+ * @param queue 
+ * @param val 
+ * @return Queue_Result 
+ */
 Queue_Result Queue_get(Queue* queue, void* val) {
     return Queue_getAt(queue, 0, val);
 }
+/**
+ * @brief get first len items from queue without removing
+ * 
+ * @param queue 
+ * @param val 
+ * @param len 
+ * @return Queue_Result 
+ */
 Queue_Result Queue_getArray(Queue* queue, void* val, Queue_LenType len) {
     return Queue_getArrayAt(queue, 0, val, len);
 }
