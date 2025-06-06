@@ -1,7 +1,7 @@
 /**
  * @file Queue.h
  * @author Ali Mirghasemi (ali.mirghasemi1376@gmail.com)
- * @brief this library implement queue buffer with read & write operations, it's based n Stream library
+ * @brief this library implement queue buffer with read & write operations, it's based on Stream library
  * @version 0.2
  * @date 2021-09-01
  *
@@ -15,11 +15,11 @@
 extern "C" {
 #endif
 
-#include "StreamBuffer.h"
-
 #define QUEUE_VER_MAJOR    0
-#define QUEUE_VER_MINOR    2
+#define QUEUE_VER_MINOR    3
 #define QUEUE_VER_FIX      0
+
+#include "StreamBuffer.h"
 
 /************************************************************************/
 /*                            Configuration                             */
@@ -29,28 +29,11 @@ extern "C" {
  */
 #define QUEUE                           (1 && STREAM_WRITE && STREAM_READ)
 /**
- * @brief Enable queue write operations
- */
-#define QUEUE_WRITE                     (1 && STREAM_WRITE)
-/**
- * @brief Enable queue write query
- */
-#define QUEUE_WRITE_QUERY               (1 && QUEUE_WRITE)
-/**
- * @brief Enable queue read operations
- */
-#define QUEUE_READ                      (1 && STREAM_READ)
-/**
- * @brief Enable queue read query
- */
-#define QUEUE_READ_QUERY                (1 && QUEUE_READ)
-/**
  * @brief based on maximum size of buffer that you use for queue
  * you can change type of len variables
  * must be signed type
  */
 typedef Stream_LenType Queue_LenType;
-
 /************************************************************************/
 
 #define __QUEUE_VER_STR(major, minor, fix)     #major "." #minor "." #fix
@@ -69,20 +52,20 @@ typedef Stream_LenType Queue_LenType;
  */
 #define QUEUE_NO_LIMIT                          STREAM_NO_LIMIT
 
-#define Queue_Ok                                Stream_Ok,                 /**< everything is OK */
-#define Queue_NoSpace                           Stream_NoSpace,            /**< there is no space for write operation */
-#define Queue_NoAvailable                       Stream_NoAvailable,        /**< there no available bytes for read operation */
-#define Queue_BufferFull                        Stream_BufferFull,         /**< buffer full*/
-#define Queue_NoReceiveFn                       Stream_NoReceiveFn,        /**< no receive function set for IStream */
-#define Queue_NoTransmitFn                      Stream_NoTransmitFn,       /**< no transmit function set for OStream */
-#define Queue_NoReceive                         Stream_NoReceive,          /**< stream is not in receive mode */
-#define Queue_NoTransmit                        Stream_NoTransmit,         /**< stream is not in transmit mode */
-#define Queue_InReceive                         Stream_InReceive,          /**< stream is in receive mode */
-#define Queue_InTransmit                        Stream_InTransmit,         /**< stream is in transmit mode */
-#define Queue_ZeroLen                           Stream_ZeroLen,            /**< len parameter is zero */
-#define Queue_ReceiveFailed                     Stream_ReceiveFailed,      /**< failed in receive */
-#define Queue_TransmitFailed                    Stream_TransmitFailed,     /**< failed in transmit */
-#define Queue_CustomError                       Stream_CustomError,        /**< can be used for custom errors */
+#define Queue_Ok                                Stream_Ok                  /**< everything is OK */
+#define Queue_NoSpace                           Stream_NoSpace             /**< there is no space for write operation */
+#define Queue_NoAvailable                       Stream_NoAvailable         /**< there no available bytes for read operation */
+#define Queue_BufferFull                        Stream_BufferFull          /**< buffer full*/
+#define Queue_NoReceiveFn                       Stream_NoReceiveFn         /**< no receive function set for IStream */
+#define Queue_NoTransmitFn                      Stream_NoTransmitFn        /**< no transmit function set for OStream */
+#define Queue_NoReceive                         Stream_NoReceive           /**< stream is not in receive mode */
+#define Queue_NoTransmit                        Stream_NoTransmit          /**< stream is not in transmit mode */
+#define Queue_InReceive                         Stream_InReceive           /**< stream is in receive mode */
+#define Queue_InTransmit                        Stream_InTransmit          /**< stream is in transmit mode */
+#define Queue_ZeroLen                           Stream_ZeroLen             /**< len parameter is zero */
+#define Queue_ReceiveFailed                     Stream_ReceiveFailed       /**< failed in receive */
+#define Queue_TransmitFailed                    Stream_TransmitFailed      /**< failed in transmit */
+#define Queue_CustomError                       Stream_CustomError         /**< can be used for custom errors */
 
 typedef Stream_Result Queue_Result;
 /**
@@ -106,7 +89,7 @@ typedef Queue_Result (*Queue_QueryFn)(Queue* queue, void* val, Queue_LenType ind
 // -------------------------- General APIs ----------------------------
 void                Queue_init(Queue* queue, void* buffer, Queue_LenType size, Queue_LenType itemSize);
 void                Queue_fromBuff(Queue* queue, void* buffer, Queue_LenType size, Queue_LenType itemSize, Queue_LenType len);
-#define             Queue_deinit(QUEUE)                                     memset((QUEUE), 0, sizeof(Queue))
+void                Queue_deinit(Queue* queue);
 
 #define             Queue_space(QUEUE)                                      (Queue_spaceRaw(QUEUE) / ((QUEUE)->ItemSize))
 #define             Queue_available(QUEUE)                                  (Queue_availableRaw(QUEUE) / ((QUEUE)->ItemSize))
@@ -164,7 +147,7 @@ void                Queue_fromBuff(Queue* queue, void* buffer, Queue_LenType siz
 #define             Queue_getBufferSizeRaw(QUEUE)                           Stream_getBufferSize(&((QUEUE)->Buffer))
 
 // -------------------------- Write Limit APIs ----------------------------
-#if QUEUE_WRITE_LIMIT
+#if STREAM_WRITE_LIMIT
     #define         Queue_spaceLimitRaw(QUEUE)                              Stream_spaceLimit(&((QUEUE)->Buffer))
     #define         Queue_getWriteLimitRaw(QUEUE)                           Stream_getWriteLimit(&((QUEUE)->Buffer))
     #define         Queue_setWriteLimitRaw(QUEUE, LEN)                      Stream_setWriteLimit(&((QUEUE)->Buffer), (LEN))
@@ -173,10 +156,10 @@ void                Queue_fromBuff(Queue* queue, void* buffer, Queue_LenType siz
     #define         Queue_getWriteLimit(QUEUE)                              (Queue_getWriteLimitRaw(QUEUE) / ((QUEUE)->ItemSize))
     #define         Queue_setWriteLimit(QUEUE, LEN)                         Queue_setWriteLimitRaw(QUEUE, (LEN) * ((QUEUE)->ItemSize))
     #define         Queue_isWriteLimited(QUEUE)                             Stream_isWriteLimited(&((QUEUE)->Buffer))
-#endif // QUEUE_WRITE_LIMIT
+#endif // STREAM_WRITE_LIMIT
 
 // -------------------------- Read Limit APIs ----------------------------
-#if QUEUE_READ_LIMIT
+#if STREAM_READ_LIMIT
     #define         Queue_availableLimitRaw(QUEUE)                          Stream_availableLimit(&((QUEUE)->Buffer))
     #define         Queue_getReadLimitRaw(QUEUE)                            Stream_getReadLimit(&((QUEUE)->Buffer))
     #define         Queue_setReadLimitRaw(QUEUE, LEN)                       Stream_setReadLimit(&((QUEUE)->Buffer), (LEN))
@@ -185,24 +168,50 @@ void                Queue_fromBuff(Queue* queue, void* buffer, Queue_LenType siz
     #define         Queue_getReadLimit(QUEUE)                               (Queue_getReadLimitRaw(QUEUE) / ((QUEUE)->ItemSize))
     #define         Queue_setReadLimit(QUEUE, LEN)                          Queue_setReadLimitRaw(QUEUE, (LEN) * ((QUEUE)->ItemSize))
     #define         Queue_isReadLimited(QUEUE)                              Stream_isReadLimited(&((QUEUE)->Buffer))
-#endif // QUEUE_READ_LIMIT
+#endif // STREAM_READ_LIMIT
 
 // -------------------------- Write Lock APIs ----------------------------
-#if QUEUE_WRITE_LOCK
+#if STREAM_WRITE_LOCK
     #define         Queue_lockWrite(QUEUE, LOCK, LEN)                       Stream_lockWriteCustom(&(QUEUE)->Buffer, LOCK, LEN, sizeof(Queue))
     #define         Queue_unlockWrite(QUEUE, LOCK)                          Stream_unlockWrite(&(QUEUE)->Buffer, LOCK)
     #define         Queue_unlockWriteIgnore(QUEUE)                          Stream_unlockWriteIgnore(&(QUEUE)->Buffer)
     #define         Queue_lockWriteLenRaw(QUEUE, LOCK)                      Stream_lockWriteLen(&(QUEUE)->Buffer, LOCK)
     #define         Queue_lockWriteLen(QUEUE, LOCK)                         (Queue_lockWriteLenRaw(QUEUE, LOCK) / (QUEUE)->ItemSize)
-#endif // QUEUE_WRITE_LOCK
+#endif // STREAM_WRITE_LOCK
 
-#if QUEUE_READ_LOCK
+#if STREAM_READ_LOCK
     #define         Queue_lockRead(QUEUE, LOCK, LEN)                        Stream_lockReadCustom(&(QUEUE)->Buffer, LOCK, LEN, sizeof(Queue))
     #define         Queue_unlockRead(QUEUE, LOCK)                           Stream_unlockRead(&(QUEUE)->Buffer, LOCK)
     #define         Queue_unlockReadIgnore(QUEUE)                           Stream_unlockReadIgnore(&(QUEUE)->Buffer)
     #define         Queue_lockReadLenRaw(QUEUE, LOCK)                       Stream_lockReadLen(&(QUEUE)->Buffer, lock)
     #define         Queue_lockReadLen(QUEUE, LOCK)                          (Queue_lockReadLenRaw(QUEUE, LOCK) / (QUEUE)->ItemSize)
-#endif // QUEUE_READ_LOCK
+#endif // STREAM_READ_LOCK
+
+// -------------------------- MemIO APIs ----------------------------
+
+#if STREAM_MEM_IO == STREAM_MEM_IO_CUSTOM
+    #define         Queue_setMemIO(STREAM, COPY, COPYR, SET, REVERSE)       Stream_setMemIO(&(STREAM)->Buffer, (COPY), (COPYR), (SET), (REVERSE))
+#elif STREAM_MEM_IO == STREAM_MEM_IO_DRIVER
+    #define         Queue_setMemIO(STREAM, MEM)                             Stream_setMemIO(&(STREAM)->Buffer, (MEM))
+#elif STREAM_MEM_IO == STREAM_MEM_IO_GLOBAL_DRIVER
+    #define         Queue_setMemIO(MEM)                                     Stream_setMemIO((MEM))
+#endif
+
+// -------------------------- Mutex APIs ----------------------------
+
+#if STREAM_MUTEX
+#if STREAM_MUTEX == STREAM_MUTEX_CUSTOM
+    #define         Queue_setMutex(STREAM, INIT, LOCK, UNLOCK, DEINIT)      Stream_setMutex(&(STREAM)->Buffer, (INIT), (LOCK), (UNLOCK), (DEINIT))
+#elif STREAM_MUTEX == STREAM_MUTEX_DRIVER
+    #define         Queue_setMutex(STREAM, DRIVER)                          Stream_setMutex(&(STREAM)->Buffer, (DRIVER))
+#elif STREAM_MUTEX == STREAM_MUTEX_GLOBAL_DRIVER
+    #define         Queue_setMutex(DRIVER)                                  Stream_setMutex((DRIVER))
+#endif
+    #define         Queue_mutexInit(STREAM)                                 Stream_mutexInit(&(STREAM)->Buffer)
+    #define         Queue_mutexLock(STREAM)                                 Stream_mutexLock(&(STREAM)->Buffer)
+    #define         Queue_mutexUnlock(STREAM)                               Stream_mutexUnlock(&(STREAM)->Buffer)
+    #define         Queue_mutexDeInit(STREAM)                               Stream_mutexDeInit(&(STREAM)->Buffer)
+#endif
 
 /**************** Write APIs **************/
 #define             Queue_write(QUEUE, VAL)                                 Stream_writeBytes(&(QUEUE)->Buffer, (uint8_t*) (VAL), (QUEUE)->ItemSize)
@@ -226,25 +235,25 @@ Queue_Result        Queue_writeQueryArray(Queue* queue, Queue_LenType len, Queue
 Queue_Result        Queue_readQuery(Queue* queue, Queue_QueryFn query);
 Queue_Result        Queue_readQueryArray(Queue* queue, Queue_LenType len, Queue_QueryFn query);
 
-#if STREAM_GET_AT_FUNCTIONS
+#if STREAM_GET_AT
     #define         Queue_getAt(QUEUE, IDX, VAL)                                Stream_getBytesAt(&(QUEUE)->Buffer, (IDX), (uint8_t*) (VAL), (QUEUE)->ItemSize)
-    #define         Queue_getArray(QUEUE, IDX, VAL, LEN)                        Stream_getBytesAt(&(QUEUE)->Buffer, (IDX), (uint8_t*) (VAL), (LEN) * (QUEUE)->ItemSize)
-#endif // QUEUE_GET_FUNCTIONS
+    #define         Queue_getArrayAt(QUEUE, IDX, VAL, LEN)                      Stream_getBytesAt(&(QUEUE)->Buffer, (IDX), (uint8_t*) (VAL), (LEN) * (QUEUE)->ItemSize)
+#endif // STREAM_GET_FUNCTIONS
 
-#if STREAM_GET_FUNCTIONS
+#if STREAM_GET
     #define         Queue_get(QUEUE, VAL)                                       Stream_getBytes(&(QUEUE)->Buffer, (uint8_t*) (VAL), (QUEUE)->ItemSize)
     #define         Queue_getArray(QUEUE, VAL, LEN)                             Stream_getBytes(&(QUEUE)->Buffer, (uint8_t*) (VAL), (LEN) * (QUEUE)->ItemSize)
-#endif // QUEUE_GET_FUNCTIONS
+#endif // STREAM_GET
 
-#if STREAM_SET_AT_FUNCTIONS
+#if STREAM_SET_AT
     #define         Queue_setAt(QUEUE, IDX, VAL)                                Stream_setBytesAt(&(QUEUE)->Buffer, (IDX), (uint8_t*) (VAL), (QUEUE)->ItemSize)
-    #define         Queue_setArray(QUEUE, IDX, VAL, LEN)                        Stream_setBytesAt(&(QUEUE)->Buffer, (IDX), (uint8_t*) (VAL), (LEN) * (QUEUE)->ItemSize)
-#endif // QUEUE_GET_FUNCTIONS
+    #define         Queue_setArrayAt(QUEUE, IDX, VAL, LEN)                      Stream_setBytesAt(&(QUEUE)->Buffer, (IDX), (uint8_t*) (VAL), (LEN) * (QUEUE)->ItemSize)
+#endif // STREAM_SET_AT
 
-#if STREAM_SET_FUNCTIONS
+#if STREAM_SET
     #define         Queue_set(QUEUE, VAL)                                       Stream_setBytes(&(QUEUE)->Buffer, (uint8_t*) (VAL), (QUEUE)->ItemSize)
     #define         Queue_setArray(QUEUE, VAL, LEN)                             Stream_setBytes(&(QUEUE)->Buffer, (uint8_t*) (VAL), (LEN) * (QUEUE)->ItemSize)
-#endif // QUEUE_GET_FUNCTIONS
+#endif // STREAM_SET
 
 #ifdef __cplusplus
 };

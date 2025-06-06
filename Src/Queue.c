@@ -2,11 +2,11 @@
 
 #if QUEUE
 
-#if STREAM_WRITE
+#if !STREAM_WRITE
     #error "Queue library require STREAM_WRITE to be enabled"
 #endif
 
-#if STREAM_READ
+#if !STREAM_READ
     #error "Queue library require STREAM_READ to be enabled"
 #endif
 
@@ -33,6 +33,15 @@ void Queue_fromBuff(Queue* queue, void* buffer, Queue_LenType size, Queue_LenTyp
     queue->ItemSize = itemSize;
 }
 /**
+ * @brief de-initialize queue
+ * 
+ * @param queue 
+ */
+void Queue_deinit(Queue* queue) {
+    Stream_deinit(&queue->Buffer);
+    queue->ItemSize = 0;
+}
+/**
  * @brief write item into queue with custom query function
  * 
  * @param queue 
@@ -47,7 +56,7 @@ Queue_Result Queue_writeQuery(Queue* queue, Queue_QueryFn query) {
     }
 #if STREAM_WRITE_LIMIT
     if (Queue_isWriteLimited(queue)) {
-        queue->Buffer.WriteLimit -= len;
+        queue->Buffer.WriteLimit -= queue->ItemSize;
     }
 #endif
 
@@ -56,7 +65,7 @@ Queue_Result Queue_writeQuery(Queue* queue, Queue_QueryFn query) {
     // Call query function
     if ((res = query(queue, Queue_getWritePtr(queue), 0, 1)) == Queue_Ok) {
         // Move WPos
-        Queue_moveWritePosRaw(queue, queue->ItemSize);
+        res = Queue_moveWritePosRaw(queue, queue->ItemSize);
     }
 
     return res;
@@ -81,7 +90,7 @@ Queue_Result Queue_writeQueryArray(Queue* queue, Queue_LenType len, Queue_QueryF
     }
 #if STREAM_WRITE_LIMIT
     if (Queue_isWriteLimited(queue)) {
-        queue->Buffer.WriteLimit -= len;
+        queue->Buffer.WriteLimit -= len * queue->ItemSize;
     }
 #endif
 
@@ -92,7 +101,7 @@ Queue_Result Queue_writeQueryArray(Queue* queue, Queue_LenType len, Queue_QueryF
             ++i < len
     ) {
         // Move WPos
-        Queue_moveWritePosRaw(queue, queue->ItemSize);
+        res = Queue_moveWritePosRaw(queue, queue->ItemSize);
     }
 
     return res;
@@ -112,7 +121,7 @@ Queue_Result Queue_readQuery(Queue* queue, Queue_QueryFn query) {
     }
 #if STREAM_READ_LIMIT
     if (Queue_isReadLimited(queue)) {
-        queue->Buffer.ReadLimit -= len;
+        queue->Buffer.ReadLimit -= queue->ItemSize;
     }
 #endif
 
@@ -121,7 +130,7 @@ Queue_Result Queue_readQuery(Queue* queue, Queue_QueryFn query) {
     // Call query function
     if ((res = query(queue, Queue_getReadPtr(queue), 0, 1)) == Queue_Ok) {
         // Move RPos
-        Queue_moveReadPosRaw(queue, queue->ItemSize);
+        res = Queue_moveReadPosRaw(queue, queue->ItemSize);
     }
 
     return res;
@@ -147,7 +156,7 @@ Queue_Result Queue_readQueryArray(Queue* queue, Queue_LenType len, Queue_QueryFn
     }
 #if STREAM_READ_LIMIT
     if (Queue_isReadLimited(queue)) {
-        queue->ReadLimit -= len;
+        queue->Buffer.ReadLimit -= len * queue->ItemSize;
     }
 #endif
 
@@ -158,7 +167,7 @@ Queue_Result Queue_readQueryArray(Queue* queue, Queue_LenType len, Queue_QueryFn
             ++i < len
     ) {
         // Move RPos
-        Queue_moveReadPosRaw(queue, queue->ItemSize);
+        res = Queue_moveReadPosRaw(queue, queue->ItemSize);
     }
 
     return res;
